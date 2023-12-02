@@ -58,17 +58,17 @@ def get_currency_rate(base: str) -> float:
 
     response = requests.get(url, headers={'apikey': API_KEY}, params={'base': base})
     rate = response.json()['rates']['RUB']
-    return rate
+    return round(float(rate), 2)
 
 
 def get_stock_rate(base: str) -> float:
-    """Получает курс акций от API и возвращает его в виде float"""
+    """Получает курс акций от API и возвращает его в виде str"""
     url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=symbol&apikey=apikey'
     # url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE'
 
     response = requests.get(url, params={'symbol': base}, headers={'apikey': STOCK_API_KEY})
     data = response.json()['Global Quote']['05. price']
-    return data
+    return float(data)
 
 
 def get_list_stocks_rates() -> list:
@@ -79,7 +79,7 @@ def get_list_stocks_rates() -> list:
     for stock in list_stock:
         dict_stocks = {
             'stock': stock,
-            'price': float(get_stock_rate(stock))
+            'price': get_stock_rate(stock)
         }
         stock_prices.append(dict_stocks)
     return stock_prices
@@ -93,7 +93,7 @@ def get_list_currency_rates() -> list:
     for rate in list_currency:
         dict_rates = {
             'currency': rate,
-            'rate': float(get_currency_rate(rate))
+            'rate': get_currency_rate(rate)
         }
         currency_rates.append(dict_rates)
     return currency_rates
@@ -111,5 +111,5 @@ if __name__ == '__main__':
     # print(get_stock_rate("AAPL"))
 
     # print(get_list_user_settings_from_json("../user_settings.json"))
-    print(get_list_stocks_rates())
-    print(get_list_currency_rates())
+    # print(get_list_stocks_rates())
+    # print(get_list_currency_rates())
