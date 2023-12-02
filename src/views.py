@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import datetime
 
@@ -29,6 +30,28 @@ def get_operations_from_xls(filename: str):
     return pd.read_excel(filename)
 
 
+def get_list_user_settings_from_json(datafile: str) -> dict:
+    """Принимает на вход путь до JSON-файла и возвращает словарь с пользовательскими настройками.
+
+    :param datafile: путь к файлу json
+    :return: dict, который содержит пользовательские настройки
+    """
+    try:
+        with open(datafile, encoding='utf-8') as f:
+            try:
+                data: dict = json.load(f)
+            except json.JSONDecodeError:
+                print('Ошибка при преобразовании в JSON данных из файла.')
+                # logger.error('Ошибка при преобразовании данных в JSON')
+                return {}
+    except FileNotFoundError:
+        print(f'Файл {datafile} не найден.')
+        # logger.error('Файл не найден')
+        return {}
+    # logger.info(f"Данные о финансовых транзакциях успешно получены из файла {os.getcwd()}\\{datafile}")
+    return data
+
+
 def get_currency_rate(base: str) -> float:
     """Получает курс от API и возвращает его в виде float"""
     url = "https://api.apilayer.com/exchangerates_data/latest"
@@ -48,6 +71,34 @@ def get_stock_rate(base: str) -> float:
     return data
 
 
+def get_list_stocks_rates() -> list:
+    list_stock = get_list_user_settings_from_json("../user_settings.json")['user_stocks']
+
+    stock_prices = []
+
+    for stock in list_stock:
+        dict_stocks = {
+            'stock': stock,
+            'price': float(get_stock_rate(stock))
+        }
+        stock_prices.append(dict_stocks)
+    return stock_prices
+
+
+def get_list_currency_rates() -> list:
+    list_currency = get_list_user_settings_from_json("../user_settings.json")['user_currencies']
+
+    currency_rates = []
+
+    for rate in list_currency:
+        dict_rates = {
+            'currency': rate,
+            'rate': float(get_currency_rate(rate))
+        }
+        currency_rates.append(dict_rates)
+    return currency_rates
+
+
 if __name__ == '__main__':
     # print(get_currency_rate('EUR'))
 
@@ -57,6 +108,8 @@ if __name__ == '__main__':
     # print(xls_file.loc[0, "Сумма операции"])
     # print(xls_file.head())
     # print(xls_file.shape)
-    print(get_stock_rate("AAPL"))
+    # print(get_stock_rate("AAPL"))
 
-
+    # print(get_list_user_settings_from_json("../user_settings.json"))
+    print(get_list_stocks_rates())
+    print(get_list_currency_rates())
