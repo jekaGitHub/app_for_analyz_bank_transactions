@@ -27,7 +27,16 @@ def greetings() -> str:
 
 
 def get_operations_from_xls(filename: str):
-    return pd.read_excel(filename)
+    df = pd.read_excel(filename)
+    return df
+
+
+def get_operations_by_date():
+    date_now = datetime.now()
+    # month = date_now.month
+    start_date = datetime(date_now.year, date_now.month, 1, 0, 0, 0)
+    new_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S.%f').strftime('%d.%m.%Y %H:%M:%S.%f')
+    return new_date
 
 
 def get_list_user_settings_from_json(datafile: str) -> dict:
@@ -113,3 +122,5 @@ if __name__ == '__main__':
     # print(get_list_user_settings_from_json("../user_settings.json"))
     # print(get_list_stocks_rates())
     # print(get_list_currency_rates())
+    # print(get_operations_from_xls("../data/operations.xls"))
+    print(get_operations_by_date())
