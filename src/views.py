@@ -27,9 +27,10 @@ def greetings() -> str:
 
 
 def get_operations_from_xls(filename: str):
-    df = pd.read_excel(filename).groupby('Номер карты')
-    dict_operations = df.to_dict()
-    # dict_operations = df.to_dict(orient='records')
+    df = pd.read_excel(filename)
+    # df = pd.read_excel(filename).groupby('Номер карты')
+    # dict_operations = df.to_dict()
+    dict_operations = df.to_dict(orient='records')
     # json_file = df.to_json(orient='records', force_ascii=False)
     # # экспорт JSON файла
     # with open('my_data.json', 'w', encoding='utf-8') as f:
@@ -52,11 +53,11 @@ def get_operations_to_card_by_date(date_operations: str) -> list[dict]:
     for transaction in transactions:
         dict_operations = {
             "last_digits": str(transaction["Номер карты"])[-4:],
-            # "total_spent": round(transaction["Сумма операции"]),
-            # "cashback": sum(abs(transaction["Сумма операции"])) / 100
+            "total_spent": sum(abs(round(transaction["Сумма операции"]))),
+            "cashback": sum(abs(round(transaction["Сумма операции"]))) / 100
         }
         operations_to_card.append(dict_operations)
-    return transactions
+    return operations_to_card
 
 
 def get_list_user_settings_from_json(datafile: str) -> dict:
@@ -142,5 +143,5 @@ if __name__ == '__main__':
     # print(get_list_user_settings_from_json("../user_settings.json"))
     # print(get_list_stocks_rates())
     # print(get_list_currency_rates())
-    print(get_operations_from_xls("../data/operations.xls"))
-    # print(get_operations_to_card_by_date('2021-12-31 16:45:00'))
+    # print(get_operations_from_xls("../data/operations.xls"))
+    print(get_operations_to_card_by_date('2021-12-31 16:45:00'))
