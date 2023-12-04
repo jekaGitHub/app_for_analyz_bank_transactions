@@ -41,6 +41,7 @@ def get_operations_from_xls(filename: str):
 def get_operations_to_card_by_date(date_operations: str) -> list[dict]:
     operations_to_card = []
     data = get_operations_from_xls("../data/operations.xls")
+    list_cards: set = set([item["Номер карты"] for item in data])
 
     format: str = '%Y-%m-%d %H:%M:%S'
     end_date = datetime.strptime(date_operations, format)
@@ -51,10 +52,15 @@ def get_operations_to_card_by_date(date_operations: str) -> list[dict]:
                     and item["Статус"] == 'OK']
 
     for transaction in transactions:
+        total_spent = 0
+        cashback = 0
+        if transaction["Номер карты"] in list_cards:
+            total_spent += abs(round(transaction["Сумма операции"]))
+            cashback += total_spent / 100
         dict_operations = {
             "last_digits": str(transaction["Номер карты"])[-4:],
-            "total_spent": sum(abs(round(transaction["Сумма операции"]))),
-            "cashback": sum(abs(round(transaction["Сумма операции"]))) / 100
+            "total_spent": total_spent,
+            "cashback": cashback
         }
         operations_to_card.append(dict_operations)
     return operations_to_card
