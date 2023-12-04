@@ -26,9 +26,10 @@ def greetings() -> str:
     return greeting
 
 
-def get_operations_from_xls(filename: str) -> list[dict]:
-    df = pd.read_excel(filename)
-    dict_operations = df.to_dict(orient='records')
+def get_operations_from_xls(filename: str):
+    df = pd.read_excel(filename).groupby('Номер карты')
+    dict_operations = df.to_dict()
+    # dict_operations = df.to_dict(orient='records')
     # json_file = df.to_json(orient='records', force_ascii=False)
     # # экспорт JSON файла
     # with open('my_data.json', 'w', encoding='utf-8') as f:
@@ -36,12 +37,26 @@ def get_operations_from_xls(filename: str) -> list[dict]:
     return dict_operations
 
 
-def get_operations_by_date(date_operations):
-    end_date = datetime.strptime(date_operations, '%Y-%m-%d %H:%M:%S')
-    # start_date = datetime(date_now.year, date_now.month, 1, 0, 0, 0).strftime('%d.%m.%Y %H:%M:%S.%f')
-    # end_date = datetime.strptime(date_operations, '%Y-%m-%d %H:%M:%S').strftime('%d.%m.%Y %H:%M:%S')
-    month = end_date.month
-    return end_date
+def get_operations_to_card_by_date(date_operations: str) -> list[dict]:
+    operations_to_card = []
+    data = get_operations_from_xls("../data/operations.xls")
+
+    format: str = '%Y-%m-%d %H:%M:%S'
+    end_date = datetime.strptime(date_operations, format)
+    start_date = datetime(end_date.year, end_date.month, 1, 0, 0, 0)
+
+    transactions = [item for item in data if start_date <=
+                    datetime.strptime(item["Дата операции"], '%d.%m.%Y %H:%M:%S') <= end_date
+                    and item["Статус"] == 'OK']
+
+    for transaction in transactions:
+        dict_operations = {
+            "last_digits": str(transaction["Номер карты"])[-4:],
+            # "total_spent": round(transaction["Сумма операции"]),
+            # "cashback": sum(abs(transaction["Сумма операции"])) / 100
+        }
+        operations_to_card.append(dict_operations)
+    return transactions
 
 
 def get_list_user_settings_from_json(datafile: str) -> dict:
@@ -127,5 +142,5 @@ if __name__ == '__main__':
     # print(get_list_user_settings_from_json("../user_settings.json"))
     # print(get_list_stocks_rates())
     # print(get_list_currency_rates())
-    # print(get_operations_from_xls("../data/operations.xls"))
-    print(get_operations_by_date('2021-12-31 15:30:00'))
+    print(get_operations_from_xls("../data/operations.xls"))
+    # print(get_operations_to_card_by_date('2021-12-31 16:45:00'))
