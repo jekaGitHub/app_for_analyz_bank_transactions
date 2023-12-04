@@ -13,6 +13,10 @@ STOCK_API_KEY: str = os.getenv('STOCK_API_KEY')
 
 
 def greetings() -> str:
+    """
+    Функция возвращает строку приветствия.
+    :return: возвращает данные в строковом формате
+    """
     time_now = datetime.now()
 
     if 6 <= time_now.hour < 12:
@@ -26,7 +30,12 @@ def greetings() -> str:
     return greeting
 
 
-def get_operations_from_xls(filename: str):
+def get_operations_from_xls(filename: str) -> list[dict]:
+    """
+    Функция принимает путь до файла загрузки и возвращает список словарей за период даты.
+    :param filename: путь до файла загрузки
+    :return: возвращает данные в питоновском формате
+    """
     df = pd.read_excel(filename)
     # df = pd.read_excel(filename).groupby('Номер карты')
     # dict_operations = df.to_dict()
@@ -39,6 +48,11 @@ def get_operations_from_xls(filename: str):
 
 
 def get_operations_by_date(date_operations: str) -> list[dict]:
+    """
+    Функция возвращает список словарей за период даты.
+    :param date_operations: конечная дата периода
+    :return: список словарей за период от начала месяца до введенной даты
+    """
     data = get_operations_from_xls("../data/operations.xls")
 
     format_: str = '%Y-%m-%d %H:%M:%S'
@@ -52,6 +66,10 @@ def get_operations_by_date(date_operations: str) -> list[dict]:
 
 
 def get_operations_to_card() -> list[dict]:
+    """
+    Функция показывает информацию по каждой карте: последние 4 цифры карты, общую сумму расходов, кэшбэк.
+    :return: возвращает список словарей в заданном формате
+    """
     operations_to_card = []
 
     transactions = get_operations_by_date('2021-12-02 21:45:00')
@@ -78,9 +96,9 @@ def get_operations_to_card() -> list[dict]:
 def get_list_dictionaries_sorted_by_sum(sort_order: bool = True) -> list[dict]:
     """
     Функция возвращает топ-5 транзакций по сумме платежа. Необязательный аргумент задает порядок сортировки
-    (убывание, возрастание)
+    (убывание, возрастание).
     :param sort_order: порядок сортировки, по умолчанию = True, на убывание
-    :return: список отсортированных словарей
+    :return: список словарей в заданном формате
     """
     data = get_operations_by_date('2021-12-02 21:45:00')
     sorted_dictionaries = sorted(data, key=lambda data_dict: abs(data_dict["Сумма платежа"]), reverse=sort_order)[:5]
@@ -119,7 +137,7 @@ def get_list_user_settings_from_json(datafile: str) -> dict:
 
 
 def get_currency_rate(base: str) -> float:
-    """Получает курс от API и возвращает его в виде float"""
+    """Получает курс от API и возвращает его в виде float."""
     url = "https://api.apilayer.com/exchangerates_data/latest"
 
     response = requests.get(url, headers={'apikey': API_KEY}, params={'base': base})
@@ -128,7 +146,7 @@ def get_currency_rate(base: str) -> float:
 
 
 def get_stock_rate(base: str) -> float:
-    """Получает курс акций от API и возвращает его в виде str"""
+    """Получает курс акций от API и возвращает его в виде str."""
     url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=symbol&apikey=apikey'
     # url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE'
 
@@ -137,7 +155,10 @@ def get_stock_rate(base: str) -> float:
     return float(data)
 
 
-def get_list_stocks_rates() -> list:
+def get_list_stocks_rates() -> list[dict]:
+    """
+    Функция возвращает список словарей по стоимости акций в заданном формате.
+    """
     list_stock = get_list_user_settings_from_json("../user_settings.json")['user_stocks']
 
     stock_prices = []
@@ -151,7 +172,10 @@ def get_list_stocks_rates() -> list:
     return stock_prices
 
 
-def get_list_currency_rates() -> list:
+def get_list_currency_rates() -> list[dict]:
+    """
+    Функция возвращает список словарей по стоимости валют в заданном формате.
+    """
     list_currency = get_list_user_settings_from_json("../user_settings.json")['user_currencies']
 
     currency_rates = []
