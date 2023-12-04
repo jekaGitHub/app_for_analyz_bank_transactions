@@ -38,32 +38,62 @@ def get_operations_from_xls(filename: str):
     return dict_operations
 
 
-def get_operations_to_card_by_date(date_operations: str) -> list[dict]:
-    operations_to_card = []
+def get_operations_by_date(date_operations: str) -> list[dict]:
     data = get_operations_from_xls("../data/operations.xls")
-    list_cards: set = set([item["Номер карты"] for item in data])
 
-    format: str = '%Y-%m-%d %H:%M:%S'
-    end_date = datetime.strptime(date_operations, format)
+    format_: str = '%Y-%m-%d %H:%M:%S'
+    end_date = datetime.strptime(date_operations, format_)
     start_date = datetime(end_date.year, end_date.month, 1, 0, 0, 0)
 
     transactions = [item for item in data if start_date <=
                     datetime.strptime(item["Дата операции"], '%d.%m.%Y %H:%M:%S') <= end_date
                     and item["Статус"] == 'OK']
+    return transactions
 
-    for transaction in transactions:
+
+def get_operations_to_card() -> list[dict]:
+    operations_to_card = []
+
+    transactions = get_operations_by_date('2021-12-02 21:45:00')
+
+    list_cards: set = set([item["Номер карты"] for item in transactions])
+
+    for card in list_cards:
         total_spent = 0
         cashback = 0
-        if transaction["Номер карты"] in list_cards:
-            total_spent += abs(round(transaction["Сумма операции"]))
-            cashback += total_spent / 100
+        for transaction in transactions:
+            if transaction["Номер карты"] == card:
+                total_spent += abs(round(transaction["Сумма операции"], 2))
+                cashback += round(abs(transaction["Сумма операции"]) / 100, 2)
+
         dict_operations = {
-            "last_digits": str(transaction["Номер карты"])[-4:],
-            "total_spent": total_spent,
-            "cashback": cashback
+            'last_digits': str(card)[-4:],
+            'total_spent': total_spent,
+            'cashback': cashback
         }
         operations_to_card.append(dict_operations)
     return operations_to_card
+
+
+def get_list_dictionaries_sorted_by_sum(sort_order: bool = True) -> list[dict]:
+    """
+    Функция возвращает топ-5 транзакций по сумме платежа. Необязательный аргумент задает порядок сортировки
+    (убывание, возрастание)
+    :param sort_order: порядок сортировки, по умолчанию = True, на убывание
+    :return: список отсортированных словарей
+    """
+    data = get_operations_by_date('2021-12-02 21:45:00')
+    sorted_dictionaries = sorted(data, key=lambda data_dict: abs(data_dict["Сумма платежа"]), reverse=sort_order)[:5]
+    top_transactions = []
+    for item in sorted_dictionaries:
+        dict_top_transactions = {
+            'date': item["Дата платежа"],
+            'amount': round(item["Сумма платежа"], 2),
+            'category': item["Категория"],
+            'description': item["Описание"]
+        }
+        top_transactions.append(dict_top_transactions)
+    return top_transactions
 
 
 def get_list_user_settings_from_json(datafile: str) -> dict:
@@ -150,4 +180,6 @@ if __name__ == '__main__':
     # print(get_list_stocks_rates())
     # print(get_list_currency_rates())
     # print(get_operations_from_xls("../data/operations.xls"))
-    print(get_operations_to_card_by_date('2021-12-31 16:45:00'))
+    # print(get_operations_by_date('2021-12-02 21:45:00'))
+    # print(get_operations_to_card())
+    print(get_list_dictionaries_sorted_by_sum())
