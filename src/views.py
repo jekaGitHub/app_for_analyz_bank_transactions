@@ -189,6 +189,17 @@ def get_list_currency_rates() -> list[dict]:
     return currency_rates
 
 
+def get_result_list_dictionaries():
+    result_dict = {
+        'greeting': greetings(),
+        'cards': get_operations_to_card(),
+        'top_transactions': get_list_dictionaries_sorted_by_sum(),
+        'currency_rates': get_list_currency_rates(),
+        'stock_prices': get_list_stocks_rates()
+    }
+    return result_dict
+
+
 if __name__ == '__main__':
     # print(get_currency_rate('EUR'))
 
@@ -206,4 +217,5 @@ if __name__ == '__main__':
     # print(get_operations_from_xls("../data/operations.xls"))
     # print(get_operations_by_date('2021-12-02 21:45:00'))
     # print(get_operations_to_card())
-    print(get_list_dictionaries_sorted_by_sum())
+    # print(get_list_dictionaries_sorted_by_sum())
+    print(get_result_list_dictionaries())
