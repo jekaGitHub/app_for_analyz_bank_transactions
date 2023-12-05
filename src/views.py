@@ -59,8 +59,8 @@ def get_operations_by_date(date_operations: str) -> list[dict]:
     end_date = datetime.strptime(date_operations, format_)
     start_date = datetime(end_date.year, end_date.month, 1, 0, 0, 0)
 
-    transactions = [item for item in data if start_date <=
-                    datetime.strptime(item["Дата операции"], '%d.%m.%Y %H:%M:%S') <= end_date
+    transactions = [item for item in data if start_date <= datetime.strptime(item["Дата операции"],
+                                                                             '%d.%m.%Y %H:%M:%S') <= end_date
                     and item["Статус"] == 'OK']
     return transactions
 
@@ -189,7 +189,7 @@ def get_list_currency_rates() -> list[dict]:
     return currency_rates
 
 
-def get_result_list_dictionaries():
+def get_result_list_dictionaries() -> dict:
     result_dict = {
         'greeting': greetings(),
         'cards': get_operations_to_card(),
