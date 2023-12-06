@@ -1,15 +1,16 @@
 import json
+import logging
 import os
 from datetime import datetime
+from typing import Any
 
 import pandas as pd
 import requests
 from dotenv import load_dotenv
 
-load_dotenv()
+from utils import get_list_user_settings_from_json
 
-API_KEY: str = os.getenv('RATE_API_KEY')
-STOCK_API_KEY: str = os.getenv('STOCK_API_KEY')
+logger = logging.getLogger(__name__)
 
 
 def greetings() -> str:
@@ -27,33 +28,50 @@ def greetings() -> str:
         greeting = 'Доброе вечер!'
     else:
         greeting = 'Доброй ночи!'
+
+    logger.info('Создано приветствие')
+
     return greeting
 
 
-def get_operations_from_xls(filename: str) -> list[dict]:
+def get_operations_from_xls(filename: str) -> Any:
     """
-    Функция принимает путь до файла загрузки и возвращает список словарей за период даты.
+    Функция принимает путь до файла загрузки и возвращает датафрейм с данными.
     :param filename: путь до файла загрузки
-    :return: возвращает данные в питоновском формате
+    :return: датафрейм
     """
+    logger.debug('Происходит загрузка данных из файла формата .xls')
+
     df = pd.read_excel(filename)
-    # df = pd.read_excel(filename).groupby('Номер карты')
-    # dict_operations = df.to_dict()
-    dict_operations = df.to_dict(orient='records')
-    # json_file = df.to_json(orient='records', force_ascii=False)
-    # # экспорт JSON файла
-    # with open('my_data.json', 'w', encoding='utf-8') as f:
-    #     f.write(json_file)
+
+    logger.info('Данные успешно получены')
+
+    return df
+
+
+def get_list_operations_from_dataframe(data: pd.DataFrame) -> list[dict]:
+    """
+    Функция принимает датафрейм и преобразует его в список словарей.
+    :param data: датафрейм
+    :return: список словарей с операциями
+    """
+
+    dict_operations = data.to_dict(orient='records')
+
+    logger.info('Сформирован список словарей из датафрейма.')
+
     return dict_operations
 
 
-def get_operations_by_date(date_operations: str) -> list[dict]:
+def get_operations_by_date(data: list[dict], date_operations: str) -> list[dict]:
     """
-    Функция возвращает список словарей за период даты.
+    Функция возвращает список словарей с данными о финансовых транзакциях за период.
+    :param data: список словарей с операциями
     :param date_operations: конечная дата периода
     :return: список словарей за период от начала месяца до введенной даты
     """
-    data = get_operations_from_xls("../data/operations.xls")
+
+    logger.debug('Происходит преобразование дат в datetime и рассчитывается начальная дата')
 
     format_: str = '%Y-%m-%d %H:%M:%S'
     end_date = datetime.strptime(date_operations, format_)
@@ -62,17 +80,19 @@ def get_operations_by_date(date_operations: str) -> list[dict]:
     transactions = [item for item in data if start_date <= datetime.strptime(item["Дата операции"],
                                                                              '%d.%m.%Y %H:%M:%S') <= end_date
                     and item["Статус"] == 'OK']
+    logger.info('Данные успешно получены')
     return transactions
 
 
-def get_operations_to_card() -> list[dict]:
+def get_operations_to_card(transactions: list[dict]) -> list[dict]:
     """
     Функция показывает информацию по каждой карте: последние 4 цифры карты, общую сумму расходов, кэшбэк.
+    :param transactions: список словарей с операциями отобранные за определённый период
     :return: возвращает список словарей в заданном формате
     """
     operations_to_card = []
 
-    transactions = get_operations_by_date('2021-12-02 21:45:00')
+    logger.debug('Получение информации по карте')
 
     list_cards: set = set([item["Номер карты"] for item in transactions])
 
@@ -90,17 +110,20 @@ def get_operations_to_card() -> list[dict]:
             'cashback': cashback
         }
         operations_to_card.append(dict_operations)
+
+    logger.info('Данные по карте успешно получены')
+
     return operations_to_card
 
 
-def get_list_dictionaries_sorted_by_sum(sort_order: bool = True) -> list[dict]:
+def get_list_dictionaries_sorted_by_sum(data: list[dict], sort_order: bool = True) -> list[dict]:
     """
     Функция возвращает топ-5 транзакций по сумме платежа. Необязательный аргумент задает порядок сортировки
     (убывание, возрастание).
+    :param data: список словарей отобранных за период
     :param sort_order: порядок сортировки, по умолчанию = True, на убывание
     :return: список словарей в заданном формате
     """
-    data = get_operations_by_date('2021-12-02 21:45:00')
     sorted_dictionaries = sorted(data, key=lambda data_dict: abs(data_dict["Сумма платежа"]), reverse=sort_order)[:5]
     top_transactions = []
     for item in sorted_dictionaries:
@@ -111,48 +134,56 @@ def get_list_dictionaries_sorted_by_sum(sort_order: bool = True) -> list[dict]:
             'description': item["Описание"]
         }
         top_transactions.append(dict_top_transactions)
+
+    logger.info('Топ-5 транзакций по сумме платежа успешно получены')
+
     return top_transactions
-
-
-def get_list_user_settings_from_json(datafile: str) -> dict:
-    """Принимает на вход путь до JSON-файла и возвращает словарь с пользовательскими настройками.
-
-    :param datafile: путь к файлу json
-    :return: dict, который содержит пользовательские настройки
-    """
-    try:
-        with open(datafile, encoding='utf-8') as f:
-            try:
-                data: dict = json.load(f)
-            except json.JSONDecodeError:
-                print('Ошибка при преобразовании в JSON данных из файла.')
-                # logger.error('Ошибка при преобразовании данных в JSON')
-                return {}
-    except FileNotFoundError:
-        print(f'Файл {datafile} не найден.')
-        # logger.error('Файл не найден')
-        return {}
-    # logger.info(f"Данные о финансовых транзакциях успешно получены из файла {os.getcwd()}\\{datafile}")
-    return data
 
 
 def get_currency_rate(base: str) -> float:
     """Получает курс от API и возвращает его в виде float."""
-    url = "https://api.apilayer.com/exchangerates_data/latest"
+    load_dotenv()
 
-    response = requests.get(url, headers={'apikey': API_KEY}, params={'base': base})
-    rate = response.json()['rates']['RUB']
-    return round(float(rate), 2)
+    api_key: str = os.getenv('RATE_API_KEY')
+
+    if api_key is None:
+        logger.error('Ключ API отсутствует!')
+        raise ValueError('Ключ API отсутствует!')
+    try:
+        url = "https://api.apilayer.com/exchangerates_data/latest"
+
+        response = requests.get(url, headers={'apikey': api_key}, params={'base': base})
+        rate = response.json()['rates']['RUB']
+
+        logger.info('Получен курс валюты!')
+
+        return round(float(rate), 2)
+    except (requests.exceptions.HTTPError, ValueError, KeyError) as e:
+        logger.error(f"Возникла ошибка {e}")
+        raise ValueError("Что-то пошло не так!")
 
 
 def get_stock_rate(base: str) -> float:
     """Получает курс акций от API и возвращает его в виде str."""
-    url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=symbol&apikey=apikey'
-    # url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE'
+    load_dotenv()
 
-    response = requests.get(url, params={'symbol': base}, headers={'apikey': STOCK_API_KEY})
-    data = response.json()['Global Quote']['05. price']
-    return float(data)
+    stock_api_key: str = os.getenv('STOCK_API_KEY')
+
+    if stock_api_key is None:
+        logger.error('Ключ API отсутствует!')
+        raise ValueError('Ключ API отсутствует!')
+    try:
+        url = 'https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=symbol&apikey=apikey'
+
+        response = requests.get(url, params={'symbol': base}, headers={'apikey': stock_api_key})
+        data = response.json()['Global Quote']['05. price']
+
+        logger.info('Получен курс акции!')
+
+        return float(data)
+    except (requests.exceptions.HTTPError, ValueError, KeyError) as e:
+        logger.error(f"Возникла ошибка {e}")
+        raise ValueError("Что-то пошло не так!")
 
 
 def get_list_stocks_rates() -> list[dict]:
@@ -169,6 +200,9 @@ def get_list_stocks_rates() -> list[dict]:
             'price': get_stock_rate(stock)
         }
         stock_prices.append(dict_stocks)
+
+    logger.info('Список с курсами акций сформирован!')
+
     return stock_prices
 
 
@@ -186,36 +220,22 @@ def get_list_currency_rates() -> list[dict]:
             'rate': get_currency_rate(rate)
         }
         currency_rates.append(dict_rates)
+
+    logger.info('Список с курсами валют сформирован!')
+
     return currency_rates
 
 
-def get_result_list_dictionaries() -> dict:
+def get_result_list_dictionaries(transactions: list[dict]) -> json:
     result_dict = {
         'greeting': greetings(),
-        'cards': get_operations_to_card(),
-        'top_transactions': get_list_dictionaries_sorted_by_sum(),
+        'cards': get_operations_to_card(transactions),
+        'top_transactions': get_list_dictionaries_sorted_by_sum(transactions),
         'currency_rates': get_list_currency_rates(),
         'stock_prices': get_list_stocks_rates()
     }
-    return result_dict
+    json_answer = json.dumps(result_dict, ensure_ascii=False, indent=4)
 
+    logger.info('JSON ответ сформирован!')
 
-if __name__ == '__main__':
-    # print(get_currency_rate('EUR'))
-
-    # filename = "../data/operations.xls"
-    # xls_file = get_operations_from_xls("../data/operations.xls")
-    # print(xls_file)
-    # print(xls_file.loc[0, "Сумма операции"])
-    # print(xls_file.head())
-    # print(xls_file.shape)
-    # print(get_stock_rate("AAPL"))
-
-    # print(get_list_user_settings_from_json("../user_settings.json"))
-    # print(get_list_stocks_rates())
-    # print(get_list_currency_rates())
-    # print(get_operations_from_xls("../data/operations.xls"))
-    # print(get_operations_by_date('2021-12-02 21:45:00'))
-    # print(get_operations_to_card())
-    # print(get_list_dictionaries_sorted_by_sum())
-    print(get_result_list_dictionaries())
+    return json_answer
