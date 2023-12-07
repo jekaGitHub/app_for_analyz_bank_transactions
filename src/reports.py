@@ -17,6 +17,7 @@ def report(*, filename: str = PATH_TO_FILE) -> Callable:
     :param filename: путь до файла, по умолчанию задан в константе
     :return: объект Callable
     """
+
     def wrapper(func: Callable) -> Callable:
         @wraps(func)
         def inner(*args: Optional[Any], **kwargs: Optional[Any]) -> Optional[Any]:
@@ -32,7 +33,9 @@ def report(*, filename: str = PATH_TO_FILE) -> Callable:
                 logger.error(f"Ошибка {e}")
                 result = None
             return result
+
         return inner
+
     return wrapper
 
 
@@ -55,7 +58,7 @@ def spending_by_category(transactions: pd.DataFrame,
     start_date_new = pd.to_datetime(start_date, dayfirst=True)
     end_date_new = pd.to_datetime(end_date, dayfirst=True)
 
-    transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], dayfirst=True). dt.date
+    transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], dayfirst=True).dt.date
     result_pd_by_date_and_category = transactions[(start_date_new <= transactions["Дата операции"] <= end_date_new) &
                                                   (transactions["Категория"] == category)]
 

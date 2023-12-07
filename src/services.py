@@ -1,7 +1,6 @@
 import json
 import logging
 import pytest
-from views import get_operations_from_xls
 
 logger = logging.getLogger(__name__)
 
