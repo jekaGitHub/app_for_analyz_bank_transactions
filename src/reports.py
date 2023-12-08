@@ -51,15 +51,14 @@ def spending_by_category(transactions: pd.DataFrame,
     :return: датафрейм с операциями
     """
     if date is None:
-        end_date = datetime.now()
-    end_date = datetime.strptime(date, '%d.%m.%Y')
+        end_date = datetime.now().date()
+    else:
+        end_date = datetime.strptime(date, '%d.%m.%Y').date()
+
     start_date = end_date + relativedelta(months=-3)
 
-    start_date_new = pd.to_datetime(start_date, dayfirst=True)
-    end_date_new = pd.to_datetime(end_date, dayfirst=True)
-
     transactions["Дата операции"] = pd.to_datetime(transactions["Дата операции"], dayfirst=True).dt.date
-    result_pd_by_date_and_category = transactions[(start_date_new <= transactions["Дата операции"] <= end_date_new) &
+    result_pd_by_date_and_category = transactions[transactions["Дата операции"].between(start_date, end_date) &
                                                   (transactions["Категория"] == category)]
 
     logger.info("Сформирован итоговый датафрейм с операциями")
