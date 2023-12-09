@@ -23,9 +23,9 @@ def greetings() -> str:
     if 6 <= time_now.hour < 12:
         greeting = 'Доброе утро!'
     elif 12 <= time_now.hour < 18:
-        greeting = 'Доброе день!'
+        greeting = 'Добрый день!'
     elif 18 <= time_now.hour < 23:
-        greeting = 'Доброе вечер!'
+        greeting = 'Добрый вечер!'
     else:
         greeting = 'Доброй ночи!'
 
